@@ -30,6 +30,8 @@ for file in files:
         stft = librosa.stft(y, n_fft=N_FFT, hop_length=HOP_LENGTH)
         spec = np.abs(stft)
 
+        spec = (spec - spec.min()) / (spec.max() - spec.min())
+
         base_name = os.path.splitext(file)[0]
         save_path = os.path.join(emotion_folder, base_name)
 
