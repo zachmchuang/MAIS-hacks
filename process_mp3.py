@@ -1,18 +1,46 @@
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import librosa.display
 
-y, sr = librosa.load("C:\MAIS-hacks\dataset1\crema-d-mirror\AudioMP3\\1001_DFA_ANG_XX.mp3", sr = 16000)
+AUDIO_DIR="C:\MAIS-hacks\dataset1\crema-d-mirror\AudioMP3"
+OUTPUT_DIR = "spectrograms"
+N_FFT = 2048
+HOP_LENGTH = 512
 
-D = librosa.stft(y, n_fft=1024, hop_length=512)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-S, phase = librosa.magphase(D)
+files = [f for f in os.listdir(AUDIO_DIR) if f.endswith(".mp3")]
 
-S_db = librosa.amplitude_to_db(S, ref=np.max)
+for file in files:
+    try: 
+        parts = file.split("_")
+        if len(parts) < 4:
+            print(f"file {file} name has wrong format.")
+            continue
+        emotion = parts[2].upper()
 
-plt.figure(figsize=(10, 4))
-librosa.display.specshow(S_db, sr=sr, hop_length=512, x_axis='time', y_axis='log', cmap='magma')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Spectrogram (STFT)')
-plt.tight_layout()
-plt.show()
+        emotion_folder = os.path.join(OUTPUT_DIR, emotion)
+        os.makedirs(emotion_folder, exist_ok=True)
+
+        filepath = os.path.join(AUDIO_DIR, file)
+        y, sr = librosa.load(filepath, sr=None)
+
+        stft = librosa.stft(y, n_fft=N_FFT, hop_length=HOP_LENGTH)
+        spec = np.abs(stft)
+
+        base_name = os.path.splitext(file)[0]
+        save_path = os.path.join(emotion_folder, base_name)
+
+        if os.path.exists(save_path):
+            print(f"skipping {file} - already exists")
+            continue
+
+        np.save(f"{save_path}.npy", spec)
+
+        print(f"processed {file} --> {emotion}/")
+
+    except Exception as e:
+        print(f"Error processing {file}: {e}")
+print("done generating spectrograms")
