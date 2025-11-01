@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import librosa.display
 
-AUDIO_DIR="C:\MAIS-hacks\dataset1\crema-d-mirror\AudioMP3"
+AUDIO_DIR="C:\\Users\The Factory\Documents\GPU-Accelerated-Notebooks\MAIS-hacks\crema-d-mirror\AudioMP3\\"
 OUTPUT_DIR = "spectrograms"
 N_FFT = 2048
 HOP_LENGTH = 512
