@@ -72,28 +72,17 @@ def load_model(path):
         st.error(f"Error loading model: {e}")
         return None
 
-def process_audio_from_bytes(audio_bytes, original_sr):
-    """Convert audio bytes to preprocessed spectrogram"""
-    # Resample if needed
-    if original_sr != SAMPLE_RATE:
-        y = librosa.resample(audio_bytes, orig_sr=original_sr, target_sr=SAMPLE_RATE)
-    else:
-        y = audio_bytes
-    
-    # Create spectrogram
+def process_audio(file_path):
+    """Convert audio file to spectrogram tensor"""
+    y, sr = librosa.load(file_path, sr=SAMPLE_RATE)
     stft = np.abs(librosa.stft(y, n_fft=N_FFT, hop_length=HOP_LENGTH))
     spec_db = librosa.amplitude_to_db(stft, ref=np.max)
     spec_db = (spec_db - spec_db.mean()) / (spec_db.std() + 1e-6)
-    
-    return spec_db
-
-def spectrogram_to_tensor(spec_db):
-    """Convert spectrogram numpy array to tensor"""
     spec_tensor = torch.tensor(spec_db).unsqueeze(0).unsqueeze(0).float().to(DEVICE)
     return spec_tensor
 
 def classify(model, spec_tensor):
-    """Classify emotion from spectrogram tensor"""
+    """Classify emotion from spectrogram"""
     with torch.no_grad():
         outputs = model(spec_tensor)
         probs = torch.softmax(outputs, dim=1)
@@ -109,39 +98,29 @@ tab1, tab2 = st.tabs(["🎤 Record Audio", "🧪 Test Model"])
 # -------- TAB 1: RECORD AUDIO --------
 with tab1:
     st.write("Click the mic button below to record a short audio clip.")
-    st.write("Your recordings will be preprocessed and saved automatically in the **recordings/** folder.")
+    st.write("Your recordings will be saved automatically in the **recordings/** folder.")
 
     # Record audio
     audio_data = st_audiorec()
 
-    # Save and process file
+    # Save file
     if audio_data is not None:
-        with st.spinner("Processing recording..."):
-            # Convert recorded bytes into NumPy audio array
-            wav_bytes = io.BytesIO(audio_data)
-            data, samplerate = sf.read(wav_bytes, dtype='float32')
+        # Convert recorded bytes into NumPy audio array
+        wav_bytes = io.BytesIO(audio_data)
+        data, samplerate = sf.read(wav_bytes, dtype='float32')
 
-            # Create timestamped filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            # Save original WAV for playback
-            wav_filename = f"recordings/recording_{timestamp}.wav"
-            sf.write(wav_filename, data, samplerate)
-            
-            # Process and save spectrogram
-            spec_db = process_audio_from_bytes(data, samplerate)
-            npy_filename = f"recordings/recording_{timestamp}.npy"
-            np.save(npy_filename, spec_db)
+        # Create timestamped filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"recordings/recording_{timestamp}.wav"
 
-            st.success(f"✅ Audio recorded and preprocessed!")
-            st.info(f"📁 Saved as `{os.path.basename(npy_filename)}`")
-            
-            # Show audio player
-            st.audio(wav_filename)
+        # Save the audio file
+        sf.write(filename, data, samplerate)
+
+        st.success(f"✅ Audio saved as `{filename}`")
 
 # -------- TAB 2: TEST MODEL --------
 with tab2:
-    st.write("Select a preprocessed recording to detect its emotion.")
+    st.write("Select a recording from the **recordings/** folder to detect its emotion.")
     
     # Check if model exists
     if not os.path.exists(MODEL_PATH):
@@ -152,18 +131,18 @@ with tab2:
         model = load_model(MODEL_PATH)
         
         if model is not None:
-            # Get list of preprocessed recordings
+            # Get list of recordings
             recordings_dir = Path("recordings")
-            npy_files = sorted(list(recordings_dir.glob("*.npy")), reverse=True)
+            recording_files = sorted(list(recordings_dir.glob("*.wav")), reverse=True)
             
-            if len(npy_files) == 0:
-                st.warning("⚠️ No preprocessed recordings found. Record some audio first!")
+            if len(recording_files) == 0:
+                st.warning("⚠️ No recordings found. Record some audio first!")
             else:
                 # Dropdown to select recording
                 selected_file = st.selectbox(
                     "Choose a recording:",
-                    npy_files,
-                    format_func=lambda x: x.stem  # Show filename without extension
+                    recording_files,
+                    format_func=lambda x: x.name
                 )
                 
                 col1, col2 = st.columns([1, 3])
@@ -171,13 +150,10 @@ with tab2:
                 with col1:
                     # Button to run prediction
                     if st.button("🔍 Detect Emotion", type="primary"):
-                        with st.spinner("Classifying..."):
+                        with st.spinner("Processing audio..."):
                             try:
-                                # Load preprocessed spectrogram
-                                spec_db = np.load(str(selected_file))
-                                
-                                # Convert to tensor and classify (fast!)
-                                spec_tensor = spectrogram_to_tensor(spec_db)
+                                # Process and classify
+                                spec_tensor = process_audio(str(selected_file))
                                 prediction, probabilities = classify(model, spec_tensor)
                                 
                                 # Display results
@@ -192,10 +168,6 @@ with tab2:
                                 st.error(f"Error processing audio: {e}")
                 
                 with col2:
-                    # Play corresponding audio if it exists
-                    wav_file = selected_file.with_suffix('.wav')
-                    if wav_file.exists():
-                        st.write("#### Preview:")
-                        st.audio(str(wav_file))
-                    else:
-                        st.info("Original audio file not found for preview.")
+                    # Play selected audio
+                    st.write("#### Preview:")
+                    st.audio(str(selected_file))
