@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import os
 import librosa.display
 
-AUDIO_DIR="C:\\Users\The Factory\Documents\GPU-Accelerated-Notebooks\MAIS-hacks\crema-d-mirror\AudioMP3\\"
+AUDIO_DIR="crema-d-mirror/AudioMP3"
+
+
 OUTPUT_DIR = "spectrograms"
 N_FFT = 2048
 HOP_LENGTH = 512
@@ -30,7 +32,8 @@ for file in files:
         stft = librosa.stft(y, n_fft=N_FFT, hop_length=HOP_LENGTH)
         spec = np.abs(stft)
 
-        spec = (spec - spec.min()) / (spec.max() - spec.min())
+        spec = librosa.amplitude_to_db(spec)
+        #spec = (spec - spec.min()) / (spec.max() - spec.min())
 
         base_name = os.path.splitext(file)[0]
         save_path = os.path.join(emotion_folder, base_name)

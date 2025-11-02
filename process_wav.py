@@ -4,19 +4,19 @@ import numpy as np
 import soundfile as sf
 from tqdm import tqdm
 
-AUDIO_DIR = "C:\\Users\The Factory\Documents\GPU-Accelerated-Notebooks\MAIS-hacks\Audio_Speech_Actors_01-24"
+AUDIO_DIR = "Audio_Speech_Actors_01-24"
 OUTPUT_DIR = "spectrograms2"
 N_FFT = 2048
 HOP_LENGTH = 512
 
 emotion_map = {
-    "01": "neutral",
+    "01": "NEU",
     "02": "calm",
-    "03": "happy",
-    "04": "sad",
-    "05": "angry",
-    "06": "fearful",
-    "07": "disgust",
+    "03": "HAP",
+    "04": "SAD",
+    "05": "ANG",
+    "06": "FEA",
+    "07": "DIS",
     "08": "surprised"
 }
 

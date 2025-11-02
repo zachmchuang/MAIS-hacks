@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-ROOT_DIR = "spectrograms"  # The root folder where your emotion subfolders are
+ROOT_DIR = "spectrograms3"  # The root folder where your emotion subfolders are
 
 for emotion in os.listdir(ROOT_DIR):
     emotion_path = os.path.join(ROOT_DIR, emotion)
