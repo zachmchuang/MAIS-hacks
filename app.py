@@ -16,7 +16,7 @@ st.title("🎙️ Audio Recorder & Emotion Detector")
 
 # -------- MODEL DEFINITION --------
 class EmotionDetector(nn.Module):
-    def __init__(self, layers, channels_in, channels_out, kernel_size, num_classes=6, n_fft=2048):
+    def __init__(self, layers=4, channels_in=1, channels_out=2, kernel_size=4, num_classes=6, n_fft=2048):
         super().__init__()
 
         self.convs = nn.ModuleList()
